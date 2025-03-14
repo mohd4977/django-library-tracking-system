@@ -4,7 +4,9 @@ from .models import Author, Book, Member, Loan
 from .serializers import AuthorSerializer, BookSerializer, MemberSerializer, LoanSerializer
 from rest_framework.decorators import action
 from django.utils import timezone
-from .tasks import send_loan_notification
+from .tasks import send_loan_notification, check_overdue_loans
+from django.core import serializers
+import json
 
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
@@ -13,7 +15,6 @@ class AuthorViewSet(viewsets.ModelViewSet):
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-
     @action(detail=True, methods=['post'])
     def loan(self, request, pk=None):
         book = self.get_object()
@@ -52,3 +53,12 @@ class MemberViewSet(viewsets.ModelViewSet):
 class LoanViewSet(viewsets.ModelViewSet):
     queryset = Loan.objects.all()
     serializer_class = LoanSerializer
+    @action(detail=True, methods=['post'])
+    def extend_due_date(self, request):
+        loan = self.get_object()
+        additional_days = request.data.get('additional_days')
+        loan.due_date = loan.due_date + 7
+        loan.save()
+        serialized_q = serializers.serialize('json', loan)
+        return Response(json.loads(serialized_q), status=status.HTTP_200_OK)
+

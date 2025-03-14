@@ -41,6 +41,11 @@ class Loan(models.Model):
     loan_date = models.DateField(auto_now_add=True)
     return_date = models.DateField(null=True, blank=True)
     is_returned = models.BooleanField(default=False)
+    due_date = models.DateField()
+
+    def save(self, *args, **kwargs):
+        self.due_date = self.loan_date + 14
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.book.title} loaned to {self.member.user.username}"
